@@ -2,12 +2,93 @@
 
 #include "mull/ReachableFunction.h"
 #include "mull/TestFrameworks/Test.h"
-
+#include <llvm/Support/raw_ostream.h>
 #include <queue>
 #include <stack>
+#include <graphviz/gvc.h>
 
 using namespace mull;
 using namespace llvm;
+
+static Agraph_t *createGraph() {
+  char name[128] = "cfg";
+  return agopen(name, Agdirected, nullptr);
+}
+
+static void saveGraph(GVC_t *context, Agraph_t *graph, const std::string &name) {
+  gvLayout(context, graph, "dot");
+
+  auto fullName = name + ".png";
+
+  const int nameLength = 128;
+  char cName[nameLength];
+  stpncpy(cName, fullName.c_str(), nameLength);
+
+  gvRenderFilename(context, graph, "png", cName);
+  gvFreeLayout(context, graph);
+  agclose(graph);
+  gvFreeContext(context);
+}
+
+static Agnode_t *newNode(const CallTree *callTree, Agraph_t *graph,
+                         std::map<const CallTree *, Agnode_t *> &memo) {
+  if (memo.count(callTree) != 0) {
+    return memo[callTree];
+  }
+
+  const int nameLength = 128;
+  char name[nameLength];
+  if (callTree->function) {
+    strncpy(name, callTree->function->getName().str().c_str(), nameLength);
+  } else {
+    strncpy(name, "<root>", nameLength);
+  }
+
+  auto node = agnode(graph, name, 1);
+  memo[callTree] = node;
+  return node;
+}
+
+static void connect(Agraph_t *graph, Agnode_t *src, Agnode_t *dst) {
+  char name[] = "";
+  auto edge = agedge(graph, src, dst, name, 1);
+
+  char def[] = "";
+
+  char style[] = "style";
+  char styleValue[] = "dashed";
+  agsafeset(edge, style, styleValue, def);
+
+  char label[] = "label";
+  char labelValue[2];
+  labelValue[0] = ' ';
+  labelValue[1] = '\0';
+  agsafeset(edge, label, labelValue, def);
+}
+
+static void drawCallTree(Agraph_t *graph, const CallTree *callTree,
+                         std::map<const CallTree *, Agnode_t *> &memo) {
+  auto root = newNode(callTree, graph, memo);
+//  llvm::errs() << callTree->children.size() << "\n";
+  for (auto &successor : callTree->children) {
+    auto node = newNode(successor.get(), graph, memo);
+    connect(graph, root, node);
+    drawCallTree(graph, successor.get(), memo);
+  }
+}
+
+static void drawGraph(Agraph_t *graph, CallTreeFunction &callTreeFunction) {
+  std::map<const CallTree *, Agnode_t *> memo;
+  drawCallTree(graph, callTreeFunction.treeRoot, memo);
+}
+
+static void buildGraph(CallTreeFunction &callTreeFunction) {
+  GVC_t *context = gvContext();
+  Agraph_t *graph = createGraph();
+  drawGraph(graph, callTreeFunction);
+
+  saveGraph(context, graph, "something");
+}
 
 void DynamicCallTree::enterFunction(const uint32_t functionIndex,
                                     uint32_t *mapping,
@@ -98,6 +179,8 @@ DynamicCallTree::createCallTree(uint32_t *mapping,
   for (uint32_t index = 1; index < functions.size(); index++) {
     fillInCallTree(functions, mapping, index);
   }
+
+  buildGraph(rootFunction);
 
   return phonyRoot;
 }

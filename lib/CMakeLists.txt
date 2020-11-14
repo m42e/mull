@@ -181,12 +181,15 @@ target_link_libraries(mull
   irm
   mull-cxx-mutators
   Diagnostics
+  gvc
+  cgraph
   )
 target_include_directories(mull PUBLIC
   ${MULL_INCLUDE_DIRS}
 )
 target_include_directories(mull SYSTEM PRIVATE
   ${THIRD_PARTY_INCLUDE_DIRS}
+  /usr/local/include
 )
 
 set_target_properties(mull PROPERTIES
