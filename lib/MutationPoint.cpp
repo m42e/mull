@@ -87,7 +87,11 @@ MutationPoint::MutationPoint(Mutator *mutator, irm::IRMutation *irMutator,
                        mutator->getUniqueIdentifier()),
       diagnostics(std::move(diagnostics)), replacement(std::move(replacement)),
       sourceLocation(SourceLocation::locationFromInstruction(instruction)), reachableTests(),
-      irMutator(irMutator) {}
+      irMutator(irMutator) {
+  userIdentifier = mutator->getUniqueIdentifier() + ':' + sourceLocation.filePath + ':' +
+                   std::to_string(sourceLocation.line) + ':' +
+                   std::to_string(sourceLocation.column);
+}
 
 Mutator *MutationPoint::getMutator() {
   return mutator;
@@ -164,10 +168,6 @@ void MutationPoint::setMutatedFunction(llvm::Function *function) {
   this->mutatedFunction = function;
 }
 
-std::string MutationPoint::getTrampolineName() {
-  return originalFunction->getName().str() + "_" + bitcode->getUniqueIdentifier() + "_trampoline";
-}
-
 std::string MutationPoint::getMutatedFunctionName() {
   return getUniqueIdentifier();
 }
@@ -187,4 +187,8 @@ std::string MutationPoint::dump() const {
 std::string MutationPoint::dumpSourceCodeContext() const {
   SourceCodeReader sourceCodeReader;
   return sourceCodeReader.getContext(sourceLocation);
+}
+
+const std::string &MutationPoint::getUserIdentifier() const {
+  return userIdentifier;
 }
