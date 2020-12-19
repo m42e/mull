@@ -1,6 +1,8 @@
 #pragma once
 
 #include "mull/Bitcode.h"
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace mull {
@@ -44,13 +46,16 @@ public:
   using Out = std::vector<int>;
   using iterator = In::const_iterator;
 
-  InsertMutationTrampolinesTask() = default;
+  explicit InsertMutationTrampolinesTask(const std::unordered_map<std::string, size_t> &mutants);
 
   void operator()(iterator begin, iterator end, Out &storage,
                   progress_counter &counter);
-  static void insertTrampolines(Bitcode &bitcode);
+  void insertTrampolines(Bitcode &bitcode);
+
+  static void insertRT(Bitcode &bitcode, const std::unordered_map<std::string, size_t> &mutants);
 
 private:
+  const std::unordered_map<std::string, size_t> &mutants;
 };
 
 } // namespace mull

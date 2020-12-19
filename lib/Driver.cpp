@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <sstream>
+#include <unordered_map>
 #include <vector>
 
 using namespace llvm;
@@ -242,13 +243,25 @@ Driver::normalRunMutations(const std::vector<MutationPoint *> &mutationPoints) {
       std::vector<DeleteOriginalFunctionsTask>(workers));
   deleteOriginalFunctions.execute();
 
+  std::unordered_map<std::string, size_t> mutants;
+  mutants["mull_dummy"] = 0;
+  for (auto &point : mutationPoints) {
+    if (mutants.count(point->getUserIdentifier()) == 0) {
+      mutants[point->getUserIdentifier()] = mutants.size();
+    }
+  }
+
+  std::vector<InsertMutationTrampolinesTask> rrruns;
+  rrruns.reserve(workers);
+  for (int i = 0; i < workers; i++) {
+    rrruns.emplace_back(mutants);
+  }
+
   TaskExecutor<InsertMutationTrampolinesTask> redirectFunctions(
-      diagnostics,
-      "Redirect mutated functions",
-      program.bitcode(),
-      Nothing,
-      std::vector<InsertMutationTrampolinesTask>(workers));
+      diagnostics, "Redirect mutated functions", program.bitcode(), Nothing, rrruns);
   redirectFunctions.execute();
+
+  InsertMutationTrampolinesTask::insertRT(*program.bitcode().front().get(), mutants);
 
   TaskExecutor<ApplyMutationTask> applyMutations(
       diagnostics, "Applying mutations", mutationPoints, Nothing, { ApplyMutationTask() });
