@@ -105,9 +105,7 @@ void InsertMutationTrampolinesTask::insertTrampolines(Bitcode &bitcode) {
 
       llvm::BasicBlock *mutationBlock =
           llvm::BasicBlock::Create(context, point->getUserIdentifier(), original);
-      new llvm::StoreInst(bitcode.getModule()->getFunction(point->getMutatedFunctionName()),
-                          trampoline,
-                          mutationBlock);
+      new llvm::StoreInst(point->getMutatedFunction(), trampoline, mutationBlock);
 
       llvm::BranchInst::Create(mutationBlock, head, predicate, mutationCheckBlock);
       llvm::BranchInst::Create(trampolineCall, mutationBlock);
