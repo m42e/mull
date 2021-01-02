@@ -129,6 +129,7 @@ struct UniqueLocationComparator {
 
 void ThreadSafeASTUnit::recordDeclarations() {
   assert(ast);
+
   clang::SourceManager &sourceManager = ast->getSourceManager();
   DeclVisitor visitor(sourceManager, decls);
   visitor.TraverseDecl(ast->getASTContext().getTranslationUnitDecl());
@@ -139,6 +140,25 @@ void ThreadSafeASTUnit::recordDeclarations() {
   UniqueLocationComparator uniqueComparator(sourceManager);
   auto last = std::unique(decls.begin(), decls.end(), uniqueComparator);
   decls.erase(last, decls.end());
+
+  auto rc = ast->getASTContext().getRawCommentList();
+
+  auto begin = sourceManager.fileinfo_begin();
+  auto end = sourceManager.fileinfo_end();
+  for (auto it = begin; it != end; it++) {
+    const clang::FileEntry *file = it->getFirst();
+    auto rcmap = rc.getCommentsInFile(sourceManager.translateFile(file));
+    if (rcmap) {
+      for (auto &pair : *rcmap) {
+        auto raw = pair.second;
+        llvm::errs() << pair.first << " : " << raw->getRawText(sourceManager) << "\n";
+        llvm::errs() << raw->getBriefText(ast->getASTContext()) << "\n";
+            raw->getBeginLoc().dump(sourceManager);
+      }
+    } else {
+      llvm::errs() << "no comments: " << file->getName()  << "\n";
+    }
+  }
 }
 
 clang::Decl *ThreadSafeASTUnit::getDecl(clang::SourceLocation &location) {
