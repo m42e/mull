@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <functional>
+#include <optional>
 #include <string>
 #include <thread>
 #include <utility>
@@ -126,5 +127,46 @@ private:
 };
 
 typedef TaskExecutor<SingleTaskTag> SingleTaskExecutor;
+
+template <typename In_, typename Out_> class LambdaTask {
+public:
+  using In = In_;
+  using Out = Out_;
+  using iterator =
+      typename std::conditional<std::is_const_v<std::remove_reference_t<In>>,
+                                typename In::const_iterator, typename In::iterator>::type;
+
+  using Task = typename std::conditional<
+      std::is_pointer_v<typename In::value_type>,
+      const std::function<std::optional<typename Out::value_type>(typename In::value_type)>,
+      const std::function<std::optional<typename Out::value_type>(typename In::value_type &)>>::
+      type;
+
+  explicit LambdaTask(Task &task) : task(task) {}
+
+  void operator()(iterator begin, iterator end, Out &storage, progress_counter &counter) {
+    for (auto it = begin; it != end; ++it, counter.increment()) {
+      auto optional = task(*it);
+      if (optional) {
+        storage.push_back(std::move(optional.value()));
+      }
+    }
+  }
+
+private:
+  Task &task;
+};
+
+template <typename In, typename Out>
+void parallelRun(Diagnostics &diagnostics, const std::string &label, In &in, Out &out, int workers,
+                 typename LambdaTask<In, Out>::Task task) {
+  std::vector<LambdaTask<In, Out>> tasks;
+  tasks.reserve(workers);
+  for (int i = 0; i < workers; i++) {
+    tasks.push_back(LambdaTask<In, Out>(task));
+  }
+  TaskExecutor<LambdaTask<In, Out>> runner(diagnostics, label, in, out, std::move(tasks));
+  runner.execute();
+}
 
 } // namespace mull

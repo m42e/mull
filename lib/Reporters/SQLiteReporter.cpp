@@ -85,7 +85,7 @@ void mull::SQLiteReporter::reportResults(const Result &result) {
   sqlite3_prepare(database, insertExecutionResultQuery, -1, &insertExecutionResultStmt, nullptr);
 
   for (auto &mutationResult : result.getMutationResults()) {
-    MutationPoint *mutationPoint = mutationResult->getMutationPoint();
+    const MutationPoint *mutationPoint = mutationResult->getMutationPoint();
     const std::string &pointId = mutationPoint->getUserIdentifier();
 
     ExecutionResult mutationExecutionResult = mutationResult->getExecutionResult();

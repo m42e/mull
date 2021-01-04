@@ -8,15 +8,15 @@ namespace mull {
 
 class MutationResult {
   ExecutionResult Result;
-  MutationPoint *MutPoint;
+  const MutationPoint *MutPoint;
 
 public:
-  MutationResult(ExecutionResult R, MutationPoint *MP) : Result(std::move(R)), MutPoint(MP) {}
+  MutationResult(ExecutionResult R, const MutationPoint *MP) : Result(std::move(R)), MutPoint(MP) {}
 
   ExecutionResult &getExecutionResult() {
     return Result;
   }
-  MutationPoint *getMutationPoint() {
+  const MutationPoint *getMutationPoint() {
     return MutPoint;
   }
 };

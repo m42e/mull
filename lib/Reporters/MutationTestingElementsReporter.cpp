@@ -25,7 +25,7 @@ static bool mutantSurvived(const ExecutionStatus &status) {
 }
 
 static json11::Json createFiles(Diagnostics &diagnostics, const Result &result,
-                                const std::set<MutationPoint *> &killedMutants,
+                                const std::set<const MutationPoint *> &killedMutants,
                                 SourceInfoProvider &sourceInfoProvider) {
   SourceManager sourceManager;
 
@@ -118,7 +118,7 @@ void MutationTestingElementsReporter::reportResults(const Result &result) {
   }
   generateHTMLFile();
 
-  std::set<MutationPoint *> killedMutants;
+  std::set<const MutationPoint *> killedMutants;
   for (auto &mutationResult : result.getMutationResults()) {
     auto mutant = mutationResult->getMutationPoint();
     auto &executionResult = mutationResult->getExecutionResult();

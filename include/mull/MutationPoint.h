@@ -86,7 +86,7 @@ public:
 
   const SourceLocation &getSourceLocation() const;
 
-  void applyMutation();
+  void applyMutation() const;
 
   std::string getMutatorIdentifier() const;
 

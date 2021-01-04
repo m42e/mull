@@ -77,17 +77,18 @@ std::vector<MutationPoint *> Driver::filterMutations(std::vector<MutationPoint *
   std::vector<MutationPoint *> mutations = std::move(mutationPoints);
 
   for (auto filter : filters.mutationFilters) {
-    std::vector<MutationFilterTask> tasks;
-    tasks.reserve(config.parallelization.workers);
-    for (int i = 0; i < config.parallelization.workers; i++) {
-      tasks.emplace_back(*filter);
-    }
-
-    std::string label = std::string("Applying filter: ") + filter->name();
     std::vector<MutationPoint *> tmp;
-    TaskExecutor<MutationFilterTask> filterRunner(
-        diagnostics, label, mutations, tmp, std::move(tasks));
-    filterRunner.execute();
+    parallelRun(diagnostics,
+                "Applying filter: "s + filter->name(),
+                mutations,
+                tmp,
+                config.parallelization.workers,
+                [&](MutationPoint *point) -> std::optional<MutationPoint *> {
+                  if (!filter->shouldSkip(point)) {
+                    return point;
+                  }
+                  return std::nullopt;
+                });
     mutations = std::move(tmp);
   }
 
@@ -98,17 +99,18 @@ std::vector<FunctionUnderTest> Driver::filterFunctions(std::vector<FunctionUnder
   std::vector<FunctionUnderTest> filteredFunctions(std::move(functions));
 
   for (auto filter : filters.functionFilters) {
-    std::vector<FunctionFilterTask> tasks;
-    tasks.reserve(config.parallelization.workers);
-    for (int i = 0; i < config.parallelization.workers; i++) {
-      tasks.emplace_back(*filter);
-    }
-
-    std::string label = std::string("Applying function filter: ") + filter->name();
     std::vector<FunctionUnderTest> tmp;
-    TaskExecutor<FunctionFilterTask> filterRunner(
-        diagnostics, label, filteredFunctions, tmp, std::move(tasks));
-    filterRunner.execute();
+    parallelRun(diagnostics,
+                "Applying function filter: "s + filter->name(),
+                filteredFunctions,
+                tmp,
+                config.parallelization.workers,
+                [&](FunctionUnderTest &fut) -> std::optional<FunctionUnderTest> {
+                  if (!filter->shouldSkip(fut.getFunction())) {
+                    return fut;
+                  }
+                  return std::nullopt;
+                });
     filteredFunctions = std::move(tmp);
   }
 
@@ -116,16 +118,16 @@ std::vector<FunctionUnderTest> Driver::filterFunctions(std::vector<FunctionUnder
 }
 
 void Driver::selectInstructions(std::vector<FunctionUnderTest> &functions) {
-  std::vector<InstructionSelectionTask> tasks;
-  tasks.reserve(config.parallelization.workers);
-  for (int i = 0; i < config.parallelization.workers; i++) {
-    tasks.emplace_back(filters.instructionFilters);
-  }
-
   std::vector<int> Nothing;
-  TaskExecutor<InstructionSelectionTask> filterRunner(
-      diagnostics, "Instruction selection", functions, Nothing, std::move(tasks));
-  filterRunner.execute();
+  parallelRun(diagnostics,
+              "Instruction selection",
+              functions,
+              Nothing,
+              config.parallelization.workers,
+              [&](FunctionUnderTest &fut) {
+                fut.selectInstructions(filters.instructionFilters);
+                return std::nullopt;
+              });
 }
 
 std::vector<std::unique_ptr<MutationResult>>
@@ -146,16 +148,16 @@ Driver::runMutations(std::vector<MutationPoint *> &mutationPoints) {
 std::vector<std::unique_ptr<MutationResult>>
 Driver::dryRunMutations(const std::vector<MutationPoint *> &mutationPoints) {
   std::vector<std::unique_ptr<MutationResult>> mutationResults;
-
-  std::vector<DryRunMutantExecutionTask> tasks;
-  tasks.reserve(config.parallelization.workers);
-  for (int i = 0; i < config.parallelization.workers; i++) {
-    tasks.emplace_back(DryRunMutantExecutionTask());
-  }
-  TaskExecutor<DryRunMutantExecutionTask> mutantRunner(
-      diagnostics, "Running mutants (dry run)", mutationPoints, mutationResults, std::move(tasks));
-  mutantRunner.execute();
-
+  parallelRun(diagnostics,
+              "Running mutants (dry run)",
+              mutationPoints,
+              mutationResults,
+              config.parallelization.workers,
+              [&](const MutationPoint *point) {
+                ExecutionResult result;
+                result.status = DryRun;
+                return std::make_unique<MutationResult>(result, point);
+              });
   return mutationResults;
 }
 
@@ -169,47 +171,53 @@ Driver::normalRunMutations(const std::vector<MutationPoint *> &mutationPoints) {
 
   auto workers = config.parallelization.workers;
   std::vector<int> devNull;
-  TaskExecutor<CloneMutatedFunctionsTask> cloneFunctions(
-      diagnostics,
-      "Cloning functions for mutation",
-      program.bitcode(),
-      devNull,
-      std::vector<CloneMutatedFunctionsTask>(workers));
-  cloneFunctions.execute();
 
-  std::vector<int> Nothing;
-  TaskExecutor<DeleteOriginalFunctionsTask> deleteOriginalFunctions(
-      diagnostics,
-      "Removing original functions",
-      program.bitcode(),
-      Nothing,
-      std::vector<DeleteOriginalFunctionsTask>(workers));
-  deleteOriginalFunctions.execute();
+  parallelRun(diagnostics,
+              "Cloning functions for mutation",
+              program.bitcode(),
+              devNull,
+              workers,
+              [&](std::unique_ptr<Bitcode> &bitcode) {
+                CloneMutatedFunctionsTask::cloneFunctions(*bitcode);
+                return std::nullopt;
+              });
+  parallelRun(diagnostics,
+              "Removing original functions",
+              program.bitcode(),
+              devNull,
+              workers,
+              [&](std::unique_ptr<Bitcode> &bitcode) {
+                DeleteOriginalFunctionsTask::deleteFunctions(*bitcode);
+                return std::nullopt;
+              });
+  parallelRun(diagnostics,
+              "Redirect mutated functions",
+              program.bitcode(),
+              devNull,
+              workers,
+              [&](std::unique_ptr<Bitcode> &bitcode) {
+                InsertMutationTrampolinesTask::insertTrampolines(*bitcode);
+                return std::nullopt;
+              });
+  parallelRun(diagnostics,
+              "Applying mutations",
+              mutationPoints,
+              devNull,
+              workers,
+              [&](const MutationPoint *point) {
+                point->applyMutation();
+                return std::nullopt;
+              });
 
-  TaskExecutor<InsertMutationTrampolinesTask> redirectFunctions(
-      diagnostics,
-      "Redirect mutated functions",
-      program.bitcode(),
-      Nothing,
-      std::vector<InsertMutationTrampolinesTask>(workers));
-  redirectFunctions.execute();
-
-  TaskExecutor<ApplyMutationTask> applyMutations(
-      diagnostics, "Applying mutations", mutationPoints, Nothing, { ApplyMutationTask() });
-  applyMutations.execute();
-
-  std::vector<OriginalCompilationTask> compilationTasks;
-  compilationTasks.reserve(workers);
-  for (int i = 0; i < workers; i++) {
-    compilationTasks.emplace_back(toolchain);
-  }
   std::vector<std::string> objectFiles;
-  TaskExecutor<OriginalCompilationTask> mutantCompiler(diagnostics,
-                                                       "Compiling original code",
-                                                       program.bitcode(),
-                                                       objectFiles,
-                                                       std::move(compilationTasks));
-  mutantCompiler.execute();
+  parallelRun(diagnostics,
+              "Compiling original code",
+              program.bitcode(),
+              objectFiles,
+              workers,
+              [&](std::unique_ptr<Bitcode> &bitcode) {
+                return toolchain.compiler().compileBitcode(*bitcode);
+              });
 
   std::string executable;
   singleTask.execute("Link mutated program",
@@ -229,15 +237,20 @@ Driver::normalRunMutations(const std::vector<MutationPoint *> &mutationPoints) {
   });
 
   std::vector<std::unique_ptr<MutationResult>> mutationResults;
+  parallelRun(diagnostics,
+              "Running mutants",
+              mutationPoints,
+              mutationResults,
+              config.parallelization.mutantExecutionWorkers,
+              [&](const MutationPoint *mutationPoint) {
+                ExecutionResult result = runner.runProgram(executable,
+                                                           {},
+                                                           { mutationPoint->getUserIdentifier() },
+                                                           baseline.runningTime * 10,
+                                                           config.captureMutantOutput);
 
-  std::vector<MutantExecutionTask> tasks;
-  tasks.reserve(config.parallelization.mutantExecutionWorkers);
-  for (int i = 0; i < config.parallelization.mutantExecutionWorkers; i++) {
-    tasks.emplace_back(config, diagnostics, executable, baseline);
-  }
-  TaskExecutor<MutantExecutionTask> mutantRunner(
-      diagnostics, "Running mutants", mutationPoints, mutationResults, std::move(tasks));
-  mutantRunner.execute();
+                return std::make_unique<MutationResult>(result, mutationPoint);
+              });
 
   return mutationResults;
 }

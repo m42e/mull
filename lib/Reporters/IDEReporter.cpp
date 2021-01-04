@@ -44,7 +44,7 @@ void IDEReporter::reportResults(const Result &result) {
     return;
   }
 
-  std::set<MutationPoint *> killedMutants;
+  std::set<const MutationPoint *> killedMutants;
   for (auto &mutationResult : result.getMutationResults()) {
     auto mutant = mutationResult->getMutationPoint();
     auto &executionResult = mutationResult->getExecutionResult();

@@ -71,7 +71,6 @@ std::unique_ptr<Bitcode> BitcodeLoader::loadBitcodeAtPath(const std::string &pat
 std::vector<std::unique_ptr<Bitcode>> BitcodeLoader::loadBitcode(const Configuration &config,
                                                                  Diagnostics &diagnostics) {
   std::vector<std::unique_ptr<Bitcode>> bitcode;
-
   std::vector<BitcodeLoadingTask> tasks;
   for (int i = 0; i < config.parallelization.workers; i++) {
     auto context = std::make_unique<LLVMContext>();

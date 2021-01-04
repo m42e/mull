@@ -1,5 +1,7 @@
 #include "mull/Parallelization/Tasks/MutantPreparationTasks.h"
+
 #include "LLVMCompatibility.h"
+#include "mull/Bitcode.h"
 #include "mull/MutationPoint.h"
 #include "mull/Parallelization/Progress.h"
 #include <llvm/IR/Constant.h>
@@ -8,14 +10,6 @@
 #include <llvm/Transforms/Utils/Cloning.h>
 
 using namespace mull;
-
-void CloneMutatedFunctionsTask::operator()(iterator begin, iterator end, Out &storage,
-                                           progress_counter &counter) {
-  for (auto it = begin; it != end; it++, counter.increment()) {
-    Bitcode &bitcode = **it;
-    cloneFunctions(bitcode);
-  }
-}
 
 void CloneMutatedFunctionsTask::cloneFunctions(Bitcode &bitcode) {
   for (auto &pair : bitcode.getMutationPointsMap()) {
@@ -29,14 +23,6 @@ void CloneMutatedFunctionsTask::cloneFunctions(Bitcode &bitcode) {
   }
 }
 
-void DeleteOriginalFunctionsTask::operator()(iterator begin, iterator end, Out &storage,
-                                             progress_counter &counter) {
-  for (auto it = begin; it != end; it++, counter.increment()) {
-    Bitcode &bitcode = **it;
-    deleteFunctions(bitcode);
-  }
-}
-
 void DeleteOriginalFunctionsTask::deleteFunctions(Bitcode &bitcode) {
   for (auto pair : bitcode.getMutationPointsMap()) {
     auto original = pair.first;
@@ -46,14 +32,6 @@ void DeleteOriginalFunctionsTask::deleteFunctions(Bitcode &bitcode) {
     auto originalCopy = CloneFunction(original, map);
     originalCopy->setName(anyPoint->getOriginalFunctionName());
     original->dropAllReferences();
-  }
-}
-
-void InsertMutationTrampolinesTask::operator()(iterator begin, iterator end, Out &storage,
-                                               progress_counter &counter) {
-  for (auto it = begin; it != end; it++, counter.increment()) {
-    Bitcode &bitcode = **it;
-    insertTrampolines(bitcode);
   }
 }
 

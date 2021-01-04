@@ -15,8 +15,6 @@ set(mull_sources
   BitcodeMetadataReader.cpp
   MutationsFinder.cpp
 
-  Parallelization/Tasks/LoadBitcodeFromBinaryTask.cpp
-
   Mutators/CXX/LogicalAndToOr.cpp
   Mutators/CXX/LogicalOrToAnd.cpp
   Mutators/MutatorKind.cpp
@@ -52,15 +50,8 @@ set(mull_sources
   Parallelization/TaskExecutor.cpp
   Parallelization/Tasks/BitcodeLoadingTask.cpp
   Parallelization/Tasks/SearchMutationPointsTask.cpp
-  Parallelization/Tasks/LoadObjectFilesTask.cpp
-  Parallelization/Tasks/DryRunMutantExecutionTask.cpp
-  Parallelization/Tasks/MutantExecutionTask.cpp
   Parallelization/Tasks/MutantPreparationTasks.cpp
-  Parallelization/Tasks/MutationFilterTask.cpp
-  Parallelization/Tasks/OriginalCompilationTask.cpp
-  Parallelization/Tasks/ApplyMutationTask.cpp
-  Parallelization/Tasks/FunctionFilterTask.cpp
-  Parallelization/Tasks/InstructionSelectionTask.cpp
+  Parallelization/Tasks/LoadBitcodeFromBinaryTask.cpp
 
   Path.cpp
 

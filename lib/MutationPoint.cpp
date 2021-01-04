@@ -111,7 +111,7 @@ Bitcode *MutationPoint::getBitcode() const {
   return bitcode;
 }
 
-void MutationPoint::applyMutation() {
+void MutationPoint::applyMutation() const {
   assert(mutatedFunction != nullptr);
   mutator->applyMutation(mutatedFunction, address, irMutator);
 }
