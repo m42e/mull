@@ -156,13 +156,13 @@ clang::CallExpr *ClangASTMutator::createGetenvCallExpr(std::string identifier) {
 #endif
       );
 
-  clang::StringLiteral *stringLiteral = clang::StringLiteral::Create(
-      context,
-      identifier,
-      clang::StringLiteral::StringKind::Ascii,
-      false,
-      factory.getStringLiteralArrayType(context.CharTy, identifier.size()),
-      clang::SourceLocation());
+  clang::StringLiteral *stringLiteral =
+      clang::StringLiteral::Create(context,
+                                   identifier,
+                                   clang::StringLiteral::StringKind::Ascii,
+                                   false,
+                                   factory.getStringLiteralArrayType(context.CharTy, identifier.size()),
+                                   clang::SourceLocation());
 
   clang::ImplicitCastExpr *implicitCastExpr2 =
       clang::ImplicitCastExpr::Create(context,

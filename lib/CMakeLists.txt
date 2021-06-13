@@ -130,12 +130,16 @@ else ()
     LLVMOption
     LLVMCoverage
     LLVMProfileData
+    clangSerialization
     LLVMAsmParser
     LLVMSupport
     LLVMOption
+    LLVMMC
     LLVM${LLVM_NATIVE_ARCH}CodeGen
     LLVM${LLVM_NATIVE_ARCH}AsmParser
-    )
+    LLVMCoverage
+    LLVMProfileData
+  )
 endif ()
 
 find_package(Threads REQUIRED)
