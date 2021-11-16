@@ -2,6 +2,11 @@ extern "C" {
 extern int printf(const char *, ...);
 }
 
+
+void uncoveredSum(int a, int b, int *result) {
+  *result = a + b;
+}
+
 void voidSum(int a, int b, int *result) {
   *result = a + b;
 }
@@ -9,6 +14,9 @@ void voidSum(int a, int b, int *result) {
 int sum(int a, int b) {
   int result = 0;
   voidSum(a, b, &result);
+  if(result > 100){
+    uncoveredSum(a, result, &result);
+  }
   return result;
 }
 

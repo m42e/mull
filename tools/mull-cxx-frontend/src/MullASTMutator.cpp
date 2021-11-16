@@ -76,7 +76,7 @@ void MullASTMutator::performBinaryMutation(ASTMutationPoint &mutation,
 
 void MullASTMutator::performRemoveVoidMutation(ASTMutationPoint &mutation,
                                                RemoveVoidMutation &removeVoidMutator) {
-//  NULL_LOCATION = mutation.mutationBeginLocation;
+  NULL_LOCATION = mutation.mutableStmt->getBeginLoc().getLocWithOffset(-1);
   clang::CallExpr *callExpr = clang::dyn_cast<clang::CallExpr>(mutation.mutableStmt);
   clangAstMutator.replaceStatement(callExpr, nullptr, mutation.mutationIdentifier);
 

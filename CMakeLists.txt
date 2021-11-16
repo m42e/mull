@@ -63,7 +63,9 @@ endif()
 set (BUILD_AGAINST_PRECOMPILED_LLVM TRUE)
 if (EXISTS ${PATH_TO_LLVM}/CMakeLists.txt)
   set (BUILD_AGAINST_PRECOMPILED_LLVM FALSE)
+  message("not precompiled")
 endif()
+set (BUILD_AGAINST_PRECOMPILED_LLVM FALSE)
 
 # This enables assertions for Release builds.
 # https://stackoverflow.com/questions/22140520/how-to-enable-assert-in-cmake-release-mode
@@ -83,6 +85,7 @@ if (${BUILD_AGAINST_PRECOMPILED_LLVM})
 
   find_package(LLVM REQUIRED CONFIG PATHS ${search_paths} NO_DEFAULT_PATH)
   find_package(Clang REQUIRED CONFIG PATHS ${search_paths} NO_DEFAULT_PATH)
+  message("Clang include dirs ${Clang_INCLUDE_DIRS} ${Clang_FOUND}")
 
   if (APPLE)
     if (LLVM_VERSION_MAJOR GREATER_EQUAL 12)
@@ -122,7 +125,7 @@ else()
   if (MULL_BUILD_32_BITS)
     set (LLVM_BUILD_32_BITS ON CACHE BOOL "Forcing LLVM to be built for 32 bits as well" FORCE)
   endif()
-  set (LLVM_ENABLE_PROJECTS "clang" CACHE BOOL "Build only Clang when building against monorepo" FORCE)
+  set (LLVM_ENABLE_PROJECTS "clang;compiler-rt" CACHE BOOL "Build only Clang when building against monorepo" FORCE)
   set (LLVM_TARGETS_TO_BUILD "host" CACHE STRING "Do not build targets we cannot JIT" FORCE)
 
   add_subdirectory(${PATH_TO_LLVM} llvm-build-dir)
@@ -138,6 +141,7 @@ else()
   # In this case we can 'steal' them from real targets
   get_target_property(llvm_support_includes LLVMSupport INCLUDE_DIRECTORIES)
   get_target_property(clang_tooling_includes clangTooling INCLUDE_DIRECTORIES)
+  message("CLANG Includes: ${llvm_support_includes} ${clang_tooling_includes}")
   set(LLVM_INCLUDE_DIRS ${llvm_support_includes} ${clang_tooling_includes})
   list(REMOVE_DUPLICATES LLVM_INCLUDE_DIRS)
 

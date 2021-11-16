@@ -73,11 +73,12 @@ public:
       visitor.TraverseFunctionDecl(f);
 
       for (auto &foundMutation : visitor.getAstMutations()) {
-        foundMutation->performMutation(*astMutator);
-        // The following is useful for debugging mutations:
-        instance.getASTContext().getTranslationUnitDecl()->print(llvm::errs(), 2);
-        instance.getASTContext().getTranslationUnitDecl()->dump();
-//        exit(3);
+	      errs() << "mut: " << foundMutation->mutationBinaryRecord << "\n";
+       foundMutation->performMutation(*astMutator);
+      //  // The following is useful for debugging mutations:
+      //  instance.getASTContext().getTranslationUnitDecl()->print(llvm::errs(), 2);
+	instance.getASTContext().getTranslationUnitDecl()->dump();
+//    //    exit(3);
       }
 
     }

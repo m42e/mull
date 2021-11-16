@@ -10,7 +10,6 @@ OptionCategory MullCategory("mull-runner");
 InputFile_();
 DumpCLIInterface_();
 ReportersOption_();
-DebugEnabled_();
 StrictModeEnabled_();
 Timeout_();
 Workers_();
@@ -39,7 +38,6 @@ void dumpCLIInterface(mull::Diagnostics &diagnostics) {
       &ReportPatchBaseDirectory,
       reporters,
       &IDEReporterShowKilled,
-      &DebugEnabled,
       &StrictModeEnabled,
 
       &NoTestOutput,

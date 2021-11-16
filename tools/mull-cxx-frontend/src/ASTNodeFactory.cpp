@@ -245,7 +245,7 @@ clang::SectionAttr *ASTNodeFactory::createSectionAttr(std::string sectionName) {
                                     sectionName,
                                     clang::SourceRange(),
                                     clang::AttributeCommonInfo::Syntax::AS_GNU,
-                                    clang::SectionAttr::Spelling::SpellingNotCalculated);
+                                    static_cast<clang::SectionAttr::Spelling>(0x0U));
 #else
   return new (context) clang::SectionAttr(clang::SourceRange(), context, sectionName, 0);
 #endif

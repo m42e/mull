@@ -21,7 +21,7 @@ MutatorsCLIOptions::MutatorsCLIOptions(Diagnostics &diagnostics,
 
 std::vector<std::unique_ptr<Mutator>> MutatorsCLIOptions::mutators() {
   std::vector<std::string> selectedGroups;
-  for (int i = 0; i < parameter.size(); i++) {
+  for (size_t i = 0; i < parameter.size(); i++) {
     auto &name = parameter[i];
     selectedGroups.push_back(options[name].first);
   }

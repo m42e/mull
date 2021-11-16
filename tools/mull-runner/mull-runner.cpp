@@ -42,10 +42,10 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  if (tool::DebugEnabled) {
-    diagnostics.enableDebugMode();
-    diagnostics.debug("Diagnostics: Debug Mode enabled. Debug-level messages will be printed.");
-  }
+  //if (tool::DebugEnabled) {
+  //  diagnostics.enableDebugMode();
+  //  diagnostics.debug("Diagnostics: Debug Mode enabled. Debug-level messages will be printed.");
+  //}
 
   if (tool::StrictModeEnabled) {
     diagnostics.enableStrictMode();
@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
 
   mull::Configuration configuration;
 
-  configuration.debugEnabled = tool::DebugEnabled;
+  //configuration.debugEnabled = tool::DebugEnabled;
   configuration.timeout = tool::Timeout.getValue();
   configuration.includeNotCovered = tool::IncludeNotCovered.getValue();
 
@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
   }
 
   std::vector<std::string> extraArgs;
-  for (size_t argIndex = 0; argIndex < tool::RunnerArgs.getNumOccurrences(); argIndex++) {
+  for (int argIndex = 0; argIndex < tool::RunnerArgs.getNumOccurrences(); argIndex++) {
     extraArgs.push_back(tool::RunnerArgs[argIndex]);
   }
 

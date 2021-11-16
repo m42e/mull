@@ -61,8 +61,8 @@ bool GitDiffFilter::shouldSkip(llvm::Instruction *instruction) const {
 
   GitDiffSourceFileRanges ranges = gitDiffInfo.at(sourceLocation.filePath);
   for (auto &range : ranges) {
-    int rangeEnd = range.first + range.second - 1;
-    if (range.first <= sourceLocation.line && sourceLocation.line <= rangeEnd) {
+    size_t rangeEnd = range.first + range.second - 1;
+    if (static_cast<size_t>(range.first) <= sourceLocation.line && sourceLocation.line <= rangeEnd) {
       std::stringstream debugMessage;
       debugMessage << "GitDiffFilter: whitelisting instruction: ";
       debugMessage << sourceLocation.filePath << ":";
